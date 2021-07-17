@@ -33,7 +33,7 @@ func (vc *VideoChunk) GetChunkFilePath() string {
 	return fmt.Sprintf("storage/%x/%x", vc.FileHash, vc.Hash)
 }
 
-//Store chunk data to the disk only if the content's hash and size matches the VideoChunk's record
+//StoreToDisk saves chunk data to the disk only if the content's hash and size matches the VideoChunk's record
 func (vc *VideoChunk) StoreToDisk(content []byte) error {
 	//1. verify the content's hash and size
 	sum := md5.Sum(content)

@@ -56,6 +56,7 @@ func (v *Video) setState(state VideoFileState) {
 	v.State = state
 }
 
+//IsAllChunkReceived returns whether all video's chunks has been saved on disk
 func (v *Video) IsAllChunkReceived() bool {
 	if v.getState() != Incomplete {
 		return true
@@ -70,6 +71,7 @@ func (v *Video) IsAllChunkReceived() bool {
 	return true
 }
 
+//DeleteAllChunks deletes video's all chunks saved on the disk
 func (v *Video) DeleteAllChunks() error {
 	for _, chunk := range v.Chunks {
 		err := storage.DeleteFileIfExists(chunk.GetChunkFilePath())
@@ -80,6 +82,7 @@ func (v *Video) DeleteAllChunks() error {
 	return nil
 }
 
+//MergeChunks merges video's all chunks if video's state is Complete, also delete all chunks data after merging
 func (v *Video) MergeChunks() error {
 	if v.getState() != Complete {
 		return nil

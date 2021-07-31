@@ -1,7 +1,7 @@
 package models
 
 import (
-	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -17,11 +17,19 @@ type (
 		FileName    string         `bson:"file_name" json:"file_name"`
 		Description string         `bson:"description" json:"description"`
 		VideoURL    string         `bson:"url" json:"url"`
-		Hash        []byte         `bson:"hash" json:"hash"`
+		AvatarImg   string         `bson:"avatar_img" json:"avatar_img"`
+		Hash        string         `bson:"hash" json:"hash"`
 		Chunks      []VideoChunk   `bson:"chunks" json:"chunks"`
 		Size        int64          `bson:"size" json:"size"`
 		State       VideoFileState `bson:"state"`
 		mtx         sync.Mutex     `bson:"-" json:"-"`
+	}
+
+	VideoMetaResponse struct {
+		Title       string `bson:"title" json:"title"`
+		Description string `bson:"description" json:"description"`
+		VideoURL    string `bson:"url" json:"url"`
+		avatarImg   string `bson:"avatar_img" json:"avatar_img"`
 	}
 )
 
@@ -31,17 +39,17 @@ const (
 	Merged                           // All chunks are merged to single file and checksum matches
 )
 
-func NewVideo(title string, fileName string, description string, hash []byte, chunks []VideoChunk, size int64) *Video {
+func NewVideo(title string, fileName string, description string, hash string, chunks []VideoChunk, size int64) *Video {
 	return &Video{Title: title, FileName: fileName, Description: description, VideoURL: fmt.Sprintf("storage/%x/%s", hash, fileName),
 		Hash: hash, Chunks: chunks, Size: size, State: Incomplete}
 }
 
-func (v *Video) getStorageDirectory() string {
-	return fmt.Sprintf("storage/%x", v.Hash)
+func (v *Video) GetStorageDirectory() string {
+	return fmt.Sprintf("storage/%s", v.Hash)
 }
 
-func (v *Video) getStorageFilePath() string {
-	return fmt.Sprintf("storage/%x/%s", v.Hash, v.FileName)
+func (v *Video) GetStorageFilePath() string {
+	return fmt.Sprintf("storage/%s/%s", v.Hash, v.FileName)
 }
 
 func (v *Video) getState() VideoFileState {
@@ -62,7 +70,7 @@ func (v *Video) IsAllChunkReceived() bool {
 		return true
 	}
 	for _, chunk := range v.Chunks {
-		if !storage.IsFileExists(chunk.GetChunkFilePath()) {
+		if !Storage.IsFileExists(chunk.GetChunkFilePath()) {
 			return false
 		}
 	}
@@ -74,7 +82,7 @@ func (v *Video) IsAllChunkReceived() bool {
 //DeleteAllChunks deletes video's all chunks saved on the disk
 func (v *Video) DeleteAllChunks() error {
 	for _, chunk := range v.Chunks {
-		err := storage.DeleteFileIfExists(chunk.GetChunkFilePath())
+		err := Storage.DeleteFileIfExists(chunk.GetChunkFilePath())
 		if err != nil {
 			return err
 		}
@@ -84,10 +92,11 @@ func (v *Video) DeleteAllChunks() error {
 
 //MergeChunks merges video's all chunks if video's state is Complete, also delete all chunks data after merging
 func (v *Video) MergeChunks() error {
-	if v.getState() != Complete {
-		return nil
+	if !v.IsAllChunkReceived() {
+		return errors.New("chunks incomplete!")
 	}
-	file, err := os.OpenFile(v.getStorageFilePath(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm)
+
+	file, err := os.OpenFile(v.GetStorageFilePath(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -109,14 +118,14 @@ func (v *Video) MergeChunks() error {
 	file.Close()
 	// After all chunks has been merged
 	// 1. check the merged file's md5 must match our record
-	md5, err := storage.ComputeFileMD5(v.getStorageFilePath())
+	md5, err := Storage.ComputeFileMD5(v.GetStorageFilePath())
 	if err != nil {
 		return err
 	}
-	if !bytes.Equal(md5, v.Hash) {
+	if hex.EncodeToString(md5) != v.Hash {
 		// If the md5 hash does not match, we need to delete all chunks and the merged file, and redo upload
 		// (I hope this scenario never happens)
-		if err := storage.DeleteFileIfExists(v.getStorageFilePath()); err != nil {
+		if err := Storage.DeleteFileIfExists(v.GetStorageFilePath()); err != nil {
 			return err
 		}
 		if err := v.DeleteAllChunks(); err != nil {

@@ -3,14 +3,14 @@ package models
 import (
 	"crypto/md5"
 	"errors"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
 //StorageManager handles troublesome storage-related tasks
 type StorageManager struct{}
 
-var storage = &StorageManager{}
+var Storage = &StorageManager{}
 
 var (
 	FileAlreadyExisted = errors.New("target file already exists")
@@ -38,6 +38,14 @@ func (storage *StorageManager) IsFileExists(path string) bool {
 //CreateFolder creates a folder at the given path
 func (storage *StorageManager) CreateFolder(path string) error {
 	return os.Mkdir(path, os.ModePerm)
+}
+
+//
+func (storage *StorageManager) CreateFolderIfNotExists(path string) error {
+	if !storage.IsFolderExists(path) {
+		return storage.CreateFolder(path)
+	}
+	return nil
 }
 
 //SaveFile saves the content as a file to the given path
@@ -69,14 +77,14 @@ func (storage *StorageManager) DeleteFileIfExists(path string) error {
 
 //ComputeFileMD5 reads content from the given file and return the computed md5 hash
 func (storage *StorageManager) ComputeFileMD5(path string) ([]byte, error) {
-	file, err := os.OpenFile(path, os.O_WRONLY, os.ModePerm)
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_RDONLY, os.ModeAppend)
 	if err != nil {
 		return nil, err
 	}
-	content, err := ioutil.ReadAll(file)
-	if err != nil {
+	md5 := md5.New()
+	if _, err = io.Copy(md5, file); err != nil {
 		return nil, err
 	}
-	sum := md5.Sum(content)
+	sum := md5.Sum(nil)
 	return sum[:], nil
 }

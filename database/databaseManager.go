@@ -31,7 +31,7 @@ func (db *Manager) InsertVideoMeta(ctx context.Context, vm models.Video) error {
 }
 
 func (db *Manager) GetAllPublicVideoMetas(ctx context.Context) ([]models.VideoMetaResponse, error) {
-	var response []models.VideoMetaResponse
+	response := make([]models.VideoMetaResponse, 0)
 	collection := db.client.Database("video-platform").Collection("videoMetas")
 	cursor, err := collection.Find(ctx, bson.D{{"state", models.Merged}})
 	if err != nil {

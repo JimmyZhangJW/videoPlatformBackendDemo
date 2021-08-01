@@ -18,8 +18,8 @@ type VideoChunk struct {
 }
 
 var (
-	FileChunkNotMatch        = errors.New("chunk's hash or size does not match our record")
-	ChunkNotOnDisk           = errors.New("chunk is not on the disk")
+	FileChunkNotMatch = errors.New("chunk's hash or size does not match our record")
+	ChunkNotOnDisk    = errors.New("chunk is not on the disk")
 )
 
 //Constructor: NewVideoChunk
@@ -59,6 +59,8 @@ func (vc *VideoChunk) ReadDiskContent() ([]byte, error) {
 	return all, nil
 }
 
+//VerifyDiskContent computes MD5 hash of the content in storage, compare it with the record
+//It deletes the file if the hashes are not correct and return FileChunkNotMatch error
 func (vc *VideoChunk) VerifyDiskContent() error {
 	content, err := vc.ReadDiskContent()
 	if err != nil {

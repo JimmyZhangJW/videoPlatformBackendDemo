@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-type VideoController struct {}
+type VideoController struct{}
 
 var VideoC = &VideoController{}
 
@@ -25,7 +25,7 @@ func (vc *VideoController) PostVideoMetaData(c *gin.Context) {
 		return
 	}
 	videoMeta.FileName = strings.ReplaceAll(videoMeta.FileName, " ", "")
-	videoMeta.VideoURL = "localhost:8080/" + videoMeta.GetStorageFilePath()
+	videoMeta.VideoURL = "http://localhost:8080/" + videoMeta.GetStorageFilePath()
 
 	exists, err := database.Database.CheckVideoMetaExists(context.Background(), videoMeta.Hash)
 	if err != nil {
@@ -60,7 +60,6 @@ func (vc *VideoController) PostVideoMetaData(c *gin.Context) {
 		"message":  "The videoMeta has been uploaded",
 	})
 }
-
 
 func (vc *VideoController) PostVideoChunk(c *gin.Context) {
 	index, err := strconv.Atoi(c.PostForm("index"))
@@ -108,7 +107,6 @@ func (vc *VideoController) PostVideoChunk(c *gin.Context) {
 	})
 }
 
-
 func (vc *VideoController) Merge(c *gin.Context) {
 	hash := c.PostForm("hash")
 	video, err := database.Database.GetVideoMetaWithHash(context.Background(), hash)
@@ -138,4 +136,14 @@ func (vc *VideoController) Merge(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 	})
+}
+
+func (vc *VideoController) GetPublicVideoMeta(c *gin.Context) {
+	videoMetas, err := database.Database.GetAllPublicVideoMetas(context.Background())
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"Message": "cannot fetch database",
+		})
+	}
+	c.JSON(http.StatusOK, videoMetas)
 }

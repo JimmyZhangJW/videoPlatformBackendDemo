@@ -40,7 +40,7 @@ func (storage *StorageManager) CreateFolder(path string) error {
 	return os.Mkdir(path, os.ModePerm)
 }
 
-//
+//CreateFolderIfNotExists only creates a folder at the given path when it does not exist
 func (storage *StorageManager) CreateFolderIfNotExists(path string) error {
 	if !storage.IsFolderExists(path) {
 		return storage.CreateFolder(path)

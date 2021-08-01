@@ -25,11 +25,12 @@ type (
 		mtx         sync.Mutex     `bson:"-" json:"-"`
 	}
 
+	//VideoMetaResponse represents partial data a client needs to know about the video
 	VideoMetaResponse struct {
 		Title       string `bson:"title" json:"title"`
 		Description string `bson:"description" json:"description"`
 		VideoURL    string `bson:"url" json:"url"`
-		avatarImg   string `bson:"avatar_img" json:"avatar_img"`
+		AvatarImg   string `bson:"avatar_img" json:"avatar_img"`
 	}
 )
 
